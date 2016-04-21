@@ -1,0 +1,82 @@
+# Uncomment for debug logging
+# event logger(data)
+# macro print($x): log(type=logger, $x)
+
+macro MAX_TAGS: 3
+macro OFFSET: 5
+
+# Metadata is indexed by market ID.
+data Metadata[](numTags, tags[3], sourceLength, source[2048], linksLength, links[])
+
+# @param {int} market Market ID
+# @param {int[]} tags Category tags (short string=int)
+# @param {bytes} source Expiry source
+# @param {bytes} links Helpful external links (or long description)
+# @return int 1 if complete, 0 if metadata already exists for this market ID
+def setMetadata(market, tags:arr, source:str, links:str):
+    if self.Metadata[market].sourceLength != 0:
+        return 0
+    with numTags = len(tags):
+        if numTags > MAX_TAGS:
+            numTags = MAX_TAGS
+        self.Metadata[market].numTags = numTags
+        with i = 0:
+            while i < numTags:
+                self.Metadata[market].tags[i] = tags[i]
+                i += 1
+        with sourceLength = len(source):
+            self.Metadata[market].sourceLength = sourceLength
+            save(self.Metadata[market].source[0], source, chars=sourceLength)
+        with linksLength = len(links):
+            self.Metadata[market].linksLength = linksLength
+            save(self.Metadata[market].links[0], links, chars=linksLength)
+            return 1
+
+# @param {int} market Market ID
+# @return int[] Concatenated market metadata
+def getMetadata(market):
+    sourceLength = self.Metadata[market].sourceLength
+    linksLength = self.Metadata[market].linksLength
+    metadata = array(OFFSET + sourceLength + linksLength)
+    i = 0
+    while i < MAX_TAGS:
+        metadata[i] = self.Metadata[market].tags[i]
+        # log(type=logger, metadata[i])
+        i += 1
+    metadata[3] = sourceLength
+    metadata[4] = linksLength
+    source = load(self.Metadata[market].source[0], chars=sourceLength)
+    c = 0
+    while c < sourceLength:
+        metadata[OFFSET + c] = getch(source, c)
+        c += 1
+    index = OFFSET + sourceLength
+    links = load(self.Metadata[market].links[0], chars=linksLength)
+    c = 0
+    while c < linksLength:
+        metadata[index + c] = getch(links, c)
+        c += 1
+    return(metadata:arr)
+
+def getTags(market):
+    numTags = self.Metadata[market].numTags
+    tags = array(numTags)
+    i = 0
+    while i < numTags:
+        tags[i] = self.Metadata[market].tags[i]
+        i += 1
+    return(tags:arr)
+
+def getSource(market):
+    sourceLength = self.Metadata[market].sourceLength
+    return(load(self.Metadata[market].source[0], chars=sourceLength):str)
+
+def getLinks(market):
+    linksLength = self.Metadata[market].linksLength
+    return(load(self.Metadata[market].links[0], chars=linksLength):str)
+
+def getSourceLength(market):
+    return self.Metadata[market].sourceLength
+
+def getLinksLength(market):
+    return self.Metadata[market].linksLength
