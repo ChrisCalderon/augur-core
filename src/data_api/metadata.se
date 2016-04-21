@@ -8,6 +8,9 @@ macro OFFSET: 5
 # Metadata is indexed by market ID.
 data Metadata[](numTags, tags[3], sourceLength, source[2048], linksLength, links[])
 
+# Tags is indexed by tag label (short string).
+# data Tags[](numMarkets, markets[])
+
 # @param {int} market Market ID
 # @param {int[]} tags Category tags (short string=int)
 # @param {bytes} source Expiry source
@@ -23,6 +26,8 @@ def setMetadata(market, tags:arr, source:str, links:str):
         with i = 0:
             while i < numTags:
                 self.Metadata[market].tags[i] = tags[i]
+                # self.Tags[tags[i]].markets[numMarkets] = market
+                # self.Tags[tags[i]].numMarkets += 1
                 i += 1
         with sourceLength = len(source):
             self.Metadata[market].sourceLength = sourceLength
