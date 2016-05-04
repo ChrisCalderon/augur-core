@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
 
 # C extensions
 *.so
@@ -8,11 +9,12 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
-venv/
 build/
 develop-eggs/
 dist/
+downloads/
 eggs/
+.eggs/
 lib/
 lib64/
 parts/
@@ -36,9 +38,12 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .coverage
+.coverage.*
 .cache
 nosetests.xml
 coverage.xml
+*,cover
+.hypothesis/
 
 # Translations
 *.mo
@@ -53,17 +58,15 @@ docs/_build/
 # PyBuilder
 target/
 
-# Emacs auto saves
-*~
-\#*\#
+#Ipython Notebook
+.ipynb_checkpoints
 
-bower_components
-serpent/ui
-.gitstats
-*.mw
-serpent/old-tests
-serpent
-python
-Downloads
-src-extern
-notes
+# virtualenv junk
+bin/
+local/
+include/
+lib/
+pip-selfcheck.json
+
+# emacs autosaves
+*~
