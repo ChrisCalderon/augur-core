@@ -19,10 +19,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # Any questions please contact joey@augur.net
 
-# import makeReports as REPORTS
-# import consensus as CONSENSUS
 import branches as BRANCHES
-import expiringEvents as EXPEVENTS
 inset('refund.se')
 
 # Reporting index is the branchID
@@ -36,9 +33,9 @@ data Reporting[](reputation[](repValue, reporterID), numberReporters, repIDtoInd
 data whitelists[](addresses[], taken)
 
 def init():
-    self.Reporting[1010101].repIDtoIndex[tx.origin] = 0
+    self.Reporting[1010101].repIDtoIndex[msg.sender] = 0
     self.Reporting[1010101].reputation[0].repValue = 0
-    self.Reporting[1010101].reputation[0].reporterID = tx.origin
+    self.Reporting[1010101].reputation[0].reporterID = msg.sender
     self.Reporting[1010101].numberReporters = 2
     self.Reporting[1010101].repIDtoIndex[1010101] = 1
     self.Reporting[1010101].reputation[1].repValue = 0
@@ -138,7 +135,7 @@ def getReputation(address):
                 b += 2
             i += 1
     else:
-        address = tx.origin
+        address = msg.sender
         branches = array(2*branchListCount)
         branchList = array(branchListCount)
         branchList = BRANCHES.getBranches(outitems=branchListCount)
@@ -165,7 +162,7 @@ def repIDToIndex(branch, repID):
 def hashReport(report: arr, salt):
     refund()
     hashInfo = array(len(report) + 2)
-    hashInfo[0] = tx.origin
+    hashInfo[0] = msg.sender
     hashInfo[1] = salt
     i = 2
     while i < (len(report) + 2):
@@ -186,53 +183,18 @@ def setInitialReporters(parent, branchID):
     self.Reporting[branchID].reputation[0].reporterID = branchID
     return(1)
 
-def claimInitialRep(parent, branchID):
-    refund()
-    #have 1 month to claim
-    if(self.repIDToIndex(branchID, msg.sender)==0 && block.timestamp < (BRANCHES.getCreationDate(branchID) + 86400*30)):
-        i = self.Reporting[branchID].numberReporters
-        rep = EXPEVENTS.getBeforeRep(parent, BRANCHES.getParentPeriod(branchID))
-        reporterID = msg.sender
-        self.Reporting[branchID].reputation[i].reporterID = reporterID
-        if(self.Reporting[branchID].fork && (userReportedOutcomeEqualToOutcomePreFork || userDidntReportOnForkedEvent || (forkedOverEthicality && userReportedOnEthicalityEqualToPreFork))):
-            # take away 30% of rep from liars and those who didn't report
-            repDecrease = rep*12912720851596685312/ONE
-            rep = rep - repDecrease
-            amountLeftToPayBonder = doubleOfTheBond - bondDoubledThusFar
-            #if(repDecrease < amountLeftToPayBonder):
-                # send all the rep to the fork bond poster
-            #else:
-                # send amountLeftToPayBonder [if positive] to the fork bond poster
-                # send the rest to the new branch's redistribution pool
-        self.Reporting[branchID].reputation[i].repValue = rep
-        self.Reporting[branchID].activeRep += rep
-        self.Reporting[branchID].repIDtoIndex[reporterID] = i
-        if(fork):
-            forkPeriod = fetchPeriodWhenForked
-            CONSENSUS.initialPenalizedSetting(branch, tx.origin, forkPeriod)
-        else:
-           CONSENSUS.initialPenalizedSetting(branch, tx.origin, (BRANCHES.getVotePeriod(branch)-1))
-        self.Reporting[branchID].dormantRep[i].reporterID = reporterID
-        # circular dependency issue
-        # circular dependency issue
-        dormantRep = EXPEVENTS.getPeriodDormantRep(parent, BRANCHES.getParentPeriod(branchID))
-        self.Reporting[branchID].dormantRep[i].repValue = dormantRep
-        self.Reporting[branchID].numberReporters += 1
-        self.Reporting[branchID].totalRep += rep + dormantRep
-        return(1)
-    else:
-        # already claimed or too late
-        return(0)
-
-def addReporter(branch, sender):
+def addReporter(branch, sender, amount, dormant, repToBonderOrBranch):
     #if(!self.whitelist.check(msg.sender)):
     #    return(-1)
     refund()
     reporterIndex = self.Reporting[branch].numberReporters
     self.Reporting[branch].repIDtoIndex[sender] = reporterIndex
-    self.Reporting[branch].reputation[reporterIndex].repValue = 0
+    self.Reporting[branch].reputation[reporterIndex].repValue = amount
     self.Reporting[branch].reputation[reporterIndex].reporterID = sender
     self.Reporting[branch].dormantRep[reporterIndex].reporterID = sender
+    self.Reporting[branchID].dormantRep[i].repValue = dormant
+    self.Reporting[branch].activeRep += amount + repToBonderOrBranch
+    self.Reporting[branchID].totalRep += amount + dormant + repToBonderOrBranch
     self.Reporting[branch].numberReporters += 1
     return(1)
 

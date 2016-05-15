@@ -27,7 +27,7 @@ data owners[]
 
 def init():
     # test initial funds
-    self.cashcoinBalances[tx.origin] = 100000*ONE
+    self.cashcoinBalances[msg.sender] = 100000*ONE
 
 # @return: cash balance of address
 def balance(address):
@@ -44,16 +44,16 @@ def initiateOwner(account):
     else:
         return(0)
 
-# should send values as fixed point in UI (1 is ONE, 4 is 4*ONE, .5 is 2^63, etc.)
+# should send values as fixed point in UI (1 is ONE, 4 is 4*ONE, .5 is ONEHALF, etc.)
 # @return: value sent, 0 if fails
 # If you've never used cash in augur, to initiate your account call this with value as 0
 def send(recver, value):
     refund()
-    if(self.owners[tx.origin]==0):
-        self.owners[tx.origin] = tx.origin
+    if(self.owners[msg.sender]==0):
+        self.owners[msg.sender] = msg.sender
     #if(self.owners[recver]==0):
     #    return(0)
-    sender = tx.origin
+    sender = msg.sender
     senderBalance = self.cashcoinBalances[sender]
     if(senderBalance >= value && value > 0):
         self.cashcoinBalances[sender] -= value
@@ -67,7 +67,7 @@ def sendFrom(recver, value, from):
     refund()
     # sendFrom would check if the sender had an owner, if it did, then it'd check and see if the msg.sender was the owner.
     # it's not owned by a regular account nor a contract owned account (i.e. a market's hash from markets.)
-    if(from!=tx.origin and msg.sender!=self.owners[from]):
+    if(from!=tx.origin and msg.sender!=self.owners[from] and msg.sender!=from):
         return(0)
     #if(self.owners[recver]==0):
     #    return(0)
@@ -93,8 +93,6 @@ def addCash(ID, amount):
     refund()
     #if(!self.whitelist.check(msg.sender)):
     #    return(-1)
-    #if(msg.sender!=self.owners[ID] && tx.origin!=self.owners[ID]):
-    #    return(0)
     self.cashcoinBalances[ID] += amount
     return(1)
 
@@ -102,20 +100,18 @@ def setCash(address, balance):
     refund()
     #if !self.whitelist.check(msg.sender):
     #    return(-1)
-    #if(msg.sender!=self.owners[address] && tx.origin!=self.owners[address]):
-    #    return(0)
     self.cashcoinBalances[address] = balance
     return(1)
 
 def depositEther():
-    self.cashcoinBalances[msg.sender] += msg.value * ONE / 10^18
+    self.cashcoinBalances[msg.sender] += msg.value * ONE / WEITOETH
     return msg.value
 
 def withdrawEther(to, value):
     if(value < 0):
         return(-1)
-    if self.cashcoinBalances[msg.sender] >= value * ONE / 10^18:
-        self.cashcoinBalances[msg.sender] -= value * ONE / 10^18
+    if self.cashcoinBalances[msg.sender] >= value * ONE / WEITOETH:
+        self.cashcoinBalances[msg.sender] -= value * ONE / WEITOETH
         send(to, value)
         return 1
     else:

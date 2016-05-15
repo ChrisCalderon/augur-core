@@ -23,17 +23,20 @@
 # If you have questions, please contact jack@augur.net or joey@augur.net.
 
 import reporting as REPORTING
+import events as EVENTS
 import cash as CASH
 import consensus as CONSENSUS
 import branches as BRANCHES
+import expiringEvents as EXPEVENTS
+import forking as FORKING
 inset('refund.se')
 
 # Error -1: Hey, you're not broke!
 def cashFaucet():
     refund()
-    if CASH.balance(tx.origin) > 5*ONE:
+    if CASH.balance(msg.sender) > 5*ONE:
         return(-1)
-    CASH.setCash(tx.origin, 10000*ONE)
+    CASH.setCash(msg.sender, 10000*ONE)
     return(1)
 
 def reputationFaucet(branch):
@@ -42,7 +45,83 @@ def reputationFaucet(branch):
         index = REPORTING.repIDToIndex(branch, tx.origin)
     else:
         index = REPORTING.getNumberReporters(branch)
-        REPORTING.addReporter(branch, tx.origin)
+        REPORTING.addReporter(branch, tx.origin, 0, 0, 0)
     REPORTING.setRep(branch, index, 47*ONE)
     CONSENSUS.initialPenalizedSetting(branch, tx.origin, (BRANCHES.getVotePeriod(branch)-1))
     return(1)
+
+def fundNewAccount(branch):
+    CASH.send(self, 0)
+    self.reputationFaucet(branch)
+    CASH.setCash(msg.sender, 10000*2^64)
+    return(1)
+
+def claimInitialRep(parent, branch):
+    refund()
+    if(BRANCHES.getParent(branch)!=parent):
+        return(0)
+    # have 1 month to claim
+    if(REPORTING.repIDToIndex(branch, msg.sender)==0 && block.timestamp < (BRANCHES.getCreationDate(branch) + TWENTYFOURHR*30)):
+        parentPeriod = BRANCHES.getParentPeriod(branch)
+        forkPeriod = BRANCHES.getForkPeriod(parent)
+        fork = REPORTING.getFork(branch)
+        forkEvent = BRANCHES.getEventForkedOver(parent)
+        report = EXPEVENTS.getReport(parent, forkPeriod, forkEvent, msg.sender)
+        outcome = EVENTS.getUncaughtOutcome(forkEvent)
+        if(binary(forkEvent)):
+            outcome = catch(outcome)
+        ethical = ethic_catch(EVENTS.getEthical(forkEvent))
+        ethicReport = EXPEVENTS.getEthicReport(parent, forkPeriod, forkEvent, msg.sender)
+        rep = EXPEVENTS.getBeforeRep(parent, parentPeriod, msg.sender)
+        repDecrease = 0
+        if(fork && (report==outcome || report==0 || (FORKING.getForkedOverEthicality(forkEvent) && ethical==ethicReport))):
+            # take away 30% of rep from liars and those who didn't report
+            repDecrease = rep*12912720851596685312/ONE
+            rep = rep - repDecrease
+            amountLeftToPayBonder = FORKING.getBondAmount(forkEvent) - FORKING.getBondPaid(forkEvent)
+            if(repDecrease < amountLeftToPayBonder):
+                # send all the rep to the fork bond poster
+                REPORTING.addRep(branch, REPORTING.repIDToIndex(branch, FORKING.getForkBondPoster(forkEvent)), repDecrease)
+            else:
+                # send amountLeftToPayBonder [if positive] to the fork bond poster
+                if(amountLeftToPayBonder > 0):
+                    REPORTING.addRep(branch, REPORTING.repIDToIndex(branch, FORKING.getForkBondPoster(forkEvent)), amountLeftToPayBonder)    
+                    # send the rest to the new branch's redistribution pool
+                    REPORTING.subtractRep(branch, REPORTING.repIDToIndex(branch, branch), (repDecrease - amountLeftToPayBonder))
+                else:
+                    # send to new branch's redistribution pool
+                    REPORTING.subtractRep(branch, REPORTING.repIDToIndex(branch, branch), repDecrease)
+        if(fork):
+            CONSENSUS.initialPenalizedSetting(branch, msg.sender, forkPeriod)
+        else:
+            CONSENSUS.initialPenalizedSetting(branch, msg.sender, (BRANCHES.getVotePeriod(branch)-1))
+        dormantRep = EXPEVENTS.getPeriodDormantRep(parent, BRANCHES.getParentPeriod(branch), msg.sender)
+        REPORTING.addReporter(branch, msg.sender, rep, dormantRep, repDecrease)
+        return(1)
+    else:
+        # already claimed or too late
+        return(0)
+
+        
+macro YES: TWO
+macro NO: ONE
+macro BAD: 3 * ONEHALF
+macro CATCH_TOLERANCE: ONE / 10
+
+macro binary($event):
+    (EVENTS.getNumOutcomes($event)==2 and EVENTS.getMaxValue($event)==TWO and EVENTS.getMinValue($event)==ONE)
+
+# Bins values to 1, 1.5, 2
+macro catch($x):
+    if($x < (BAD - CATCH_TOLERANCE)):
+        NO
+    elif($x > (BAD + CATCH_TOLERANCE)):
+        YES
+    else:
+        BAD
+        
+macro ethic_catch($x):
+    if($x < ONEHALF):
+        0
+    else:
+        ONE

@@ -20,7 +20,7 @@
 # Any questions please contact joey@augur.net
 
 import cash as CASH
-
+inset('refund.se')
 
 # CurrentVotePeriod is the current index in eventsExpDates
 # Branches' index is the hash of the branch (aka branchID)

@@ -4,7 +4,7 @@ import events as EVENTS
 inset('refund.se')
 
 # eight winning outcomes
-def eightOutcomes(market, winningOutcome: arr, events: arr):
+def eightOutcomes(market, winningOutcome: arr, events: arr, sender):
     refund()
     outcomeOne = EVENTS.getOutcome(events[0])
     minValueOne = EVENTS.getMinValue(events[0])
@@ -48,16 +48,14 @@ def eightOutcomes(market, winningOutcome: arr, events: arr):
     pricePerShare[7] = outcomeOneHighSidePercent * outcomeTwoHighSidePercent * outcomeThreeHighSidePercent / (ONE * ONE)
 
     # distribute cashcoin to the people who won money by holding winning shares
-    participantNumber = MARKETS.getParticipantNumber(market, tx.origin)
-    if(participantNumber == -1):
-        return(-1)
+    participantNumber = MARKETS.getParticipantNumber(market, sender)
     participant = MARKETS.getParticipantID(market, participantNumber)
     
     # for each winning outcome do...
     n = 0
     while(winningOutcome[n]!=0):
         sharesOwned = MARKETS.getParticipantSharesPurchased(market, participantNumber, winningOutcome[n])
-        MARKETS.modifyParticipantShares(MARKETS.getBranchID(market), market, participantNumber, winningOutcome[n], -sharesOwned)
+        MARKETS.modifyParticipantShares(market, participantNumber, winningOutcome[n], -sharesOwned)
         CASH.subtractCash(market, sharesOwned*pricePerShare[n]*MARKETS.getCumScale(market)/ONE)
         CASH.addCash(participant, sharesOwned*MARKETS.getCumScale(market)/ONE*pricePerShare[n]/ONE)
         n+=1

@@ -36,6 +36,8 @@ def createSubbranch(description:str, periodLength, parent, tradingFee, oracleOnl
     if(periodLength<=0 || !BRANCHES.getPeriodLength(parent) || description==0):
         return(-1)
 
+    if(tradingFee < 0 or tradingFee > 2**62):
+        return(-1)
     parentPeriod = BRANCHES.getVotePeriod(parent)
 
     branchInfo = string(8*32+len(description))
@@ -56,7 +58,7 @@ def createSubbranch(description:str, periodLength, parent, tradingFee, oracleOnl
         BRANCHES.initializeBranch(branchID, currentVotePeriod, periodLength, tradingFee, oracleOnly, parentPeriod, parent)
     else:
         return(-2)
-    if(INFO.getCreator(parent) && CASH.send(parent, 47*ONE) && INFO.setInfo(branchID, description, tx.origin, 47*ONE) && REPORTING.setInitialReporters(parent, branchID)):
+    if(INFO.getCreator(parent) && CASH.sendFrom(parent, 47*ONE, msg.sender) && INFO.setInfo(branchID, description, tx.origin, 47*ONE) && REPORTING.setInitialReporters(parent, branchID)):
         return(branchID)
     else:
         return(-2)
