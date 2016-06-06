@@ -22,15 +22,10 @@
 import branches as BRANCHES
 import info as INFO
 import cash as CASH
-import reporting as REPORTING
-import makeReports as MAKEREPORTS
-import fxpFunctions as FXP
 import markets as MARKETS
 import backstops as BACKSTOPS
 import events as EVENTS
 import expiringEvents as EXPEVENTS
-import trades as TRADES
-import completeSets as COMPLETESETS
 inset('refund.se')
 
 macro POINTZEROSIX: 1106804644422573056
@@ -209,7 +204,7 @@ def createMarket(branch, description:str, tradingFee, events:arr, tag1, tag2, ta
             if(EXPEVENTS.getEvent(branch, futurePeriod, EXPEVENTS.getEventIndex(futurePeriod, events[i]))!=events[i]):
                 EXPEVENTS.addEvent(branch, futurePeriod, events[i], 500000*tx.gasprice)
                 # cost for calculating num. of reports for an event
-                CASH.send(EVENTS, 500000*tx.gasprice)
+                CASH.send(EXPEVENTS, 500000*tx.gasprice)
             i += 1
         return(marketID)
     else:

@@ -2,10 +2,10 @@ import reporting as REPORTING
 import branches as BRANCHES
 import expiringEvents as EXPEVENTS
 import events as EVENTS
+import proportionCorrect as PROPORTION
 import markets as MARKETS
 import backstops as BACKSTOPS
 import consensusData as CONSENSUS
-import penalizeNotEnoughReports as NOTENOUGH
 import roundTwo as ROUNDTWO
 
 inset('refund.se')
@@ -43,6 +43,8 @@ def penalizeRoundTwoWrong(branch, event):
     roundTwo = BACKSTOPS.getRoundTwo(event)
     overruled = 0
     uncaught = EVENTS.getUncaughtOutcome(event)
+    if(repBalance < ONE):
+        return(0)
     if(CONSENSUS.getPenalizedUpTo(branch, msg.sender)==lastPeriod):
         return(-5)
     # if no events in a period
@@ -60,7 +62,7 @@ def penalizeRoundTwoWrong(branch, event):
     if(scalar(event) or categorical(event)):
         outcome = uncaught
     forkEvent = BRANCHES.getEventForkedOver(branch)
-    p = self.proportionCorrect(event)
+    p = PROPORTION.proportionCorrect(event)
     reportValue = EXPEVENTS.getReport(branch, lastPeriod, event, msg.sender)
     lastPenalizationPeriod = lastPeriod - 1
     oldReport = EXPEVENTS.getReport(branch,lastPenalizationPeriod,event,msg.sender)
@@ -167,6 +169,11 @@ def penalizeRoundTwoWrong(branch, event):
         if(newAfterRep <= 0):
             newAfterRep = 0
             EXPEVENTS.setAfterRep(branch, lastPeriod, newAfterRep, msg.sender)
+        if(oldRep==0):
+            EXPEVENTS.setAfterRep(branch, lastPeriod, repBalance, msg.sender)
+            EXPEVENTS.setBeforeRep(branch, lastPeriod, repBalance, msg.sender)
+            newAfterRep = repBalance
+            oldRep = repBalance
         CONSENSUS.setPenalizedUpTo(branch, msg.sender, lastPeriod)
         CONSENSUS.increaseDenominator(branch, lastPeriod, newAfterRep)
         totalRepDifference = newAfterRep - oldRep
@@ -187,28 +194,6 @@ macro BAD: 3 * ONEHALF
 macro CATCH_TOLERANCE: ONE / 10
 
 # put in consensus data
-#def proportionCorrect(event):
-#    refund()
-#    p = 0
-#    outcome = catch(EVENTS.getUncaughtOutcome(event))
-#    if(outcome!=0):
-#        # binary
-#        if(EVENTS.getNumOutcomes(event)==2 and EVENTS.getMaxValue(event)==TWO and EVENTS.getMinValue(event)==ONE):
-#            # subtract 1 to get it from 0 to 1
-#            avgOutcome = EVENTS.getUncaughtOutcome(event) - ONE
-#            # say we have outcome of 0, avg is .4, what is p?
-#            # p is .6 or 60%
-#            if(outcome == ONE):
-#                p = ONE - avgOutcome
-#            # say we have outcome of 1, avg is .8, what is p (proportion correct)?
-#            # p is .8 or 80%
-#            if(outcome == 2 * ONE):
-#                p = avgOutcome
-#            if(outcome == 3 * ONEHALF):
-#                return(0)
-#        return(p)
-#    else:
-#        return(0)
 
 macro periodOver($branch):
     # what the current vote period should be

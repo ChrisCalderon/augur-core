@@ -23,14 +23,11 @@ def test_cash():
     assert(c.balance(111)==11), "Cash value not expected!"
     gas_use(s)
     c.send(111, 10)
-    assert(c.send(47, 10)==0), "Receiver check broken"
     assert(c.balance(111)==21), "Send function broken"
-    assert(c.sendFrom(101, 1, 111)==0), "Receiver uninitialized check failed"
     c.initiateOwner(101)
     assert(c.sendFrom(101, 1, 111)==1), "Send from broken"
     assert(c.balance(111)==20), "Send from broken"
     assert(c.balance(101)==1), "Send from broken"
-    assert(c.setCash(447, 101)==0), "Set cash owner check broken"
     gas_use(s)
     print "CASH OK"
 
@@ -39,8 +36,9 @@ def test_ether():
     initial_gas = 0
     t.gas_limit = 100000000
     s = t.state()
-    c = s.abi_contract('data_api/ether.se')
-    assert(c.depositEther(value=5)==5), "Unsuccessful eth deposit"
+    c = s.abi_contract('need_addl_testing/ether.se')
+    print c.depositEther(value=5)
+    assert(c.depositEther(value=5)==int(5*2**64/10**18)), "Unsuccessful eth deposit"
     assert(c.withdrawEther(111, 500)==0), "Printed money out of thin air..."
     assert(c.withdrawEther(111, 5)==1), "Unsuccessful withdrawal"
     gas_use(s)
@@ -57,9 +55,6 @@ def test_exp():
     c.addEvent(1010101, 0, 447)
     assert(c.getEvent(1010101, 0, 0) == 447), "Add/get event broken"
     assert(c.getNumberEvents(1010101, 0)==1), "Num events wrong"
-    assert(c.setNumEventsToReportOn(1010101, 0)==-1), "Vote period check issue"
-    c.moveEventsToCurrentPeriod(1010101, 1, 2)
-    assert(c.getEvent(1010101, 2, 0) == 447), "Move events broken"
     assert(c.sqrt(25*2**64)==5*2**64), "Square root broken"
     print "EXPIRING EVENTS OK"
     gas_use(s)
@@ -519,7 +514,7 @@ def test_close_market():
     assert(c.submitReport(event2, 0, 2*2**64, 2**64, value=500000000)==1), "Report submission failed"
     assert(c.submitReport(event4, 0, 3*2**63, 2**64)==1), "Report submission failed"
     assert(c.submitReport(event5, 0, 2**63, 2**64, value=500000000)==1)
-    assert(c.submitReport(event6, 0, 1, 2**64, value=500000000)
+    assert(c.submitReport(event6, 0, 1, 2**64, value=500000000)==1)
     c.send(market5, 2**64)
     assert(c.closeMarket(1010101, market5)==0), "Not expired check [and not early resolve due to not enough reports submitted check] broken"
     assert(c.submitReport(event1, 0, 2**64, 2**64)==1), "Report submission failed"
@@ -856,7 +851,7 @@ def test_consensus_multiple_reporters():
     assert(c.getRepBalance(branch, branch)==0), "Branch magically gained rep..."
     assert(c.penalizeWrong(1010101, bunethicalevent)==1)
     # lost rep
-    assert(c.getAfterRep(branch, period, s.block.coinbase) < int(46.6*2**64) and c.getAfterRep(branch, period, s.block.coinbase)) > int(46.3*2**64))
+    assert(c.getAfterRep(branch, period, s.block.coinbase) < int(46.6*2**64) and c.getAfterRep(branch, period, s.block.coinbase) > int(46.3*2**64))
     assert(c.penalizeWrong(1010101, bindeterminateevent)==1)
     # same rep
     assert(c.getAfterRep(branch, period, s.block.coinbase) < int(46.6*2**64) and c.getAfterRep(branch, period, s.block.coinbase) > int(46.3*2**64))
@@ -953,7 +948,7 @@ def test_consensus_multiple_reporters():
     
     assert(c.collectFees(1010101, s.block.coinbase)==1)
     assert(c.collectFees(1010101, c.getSender(sender=t.k2))==1)
-    assert(c.collectFees(1010101, c.getSender(sender=t.k3))==1)
+    assert(c.ccollectFees(1010101, c.getSender(sender=t.k3))==1)
     assert(c.getRepBalance(branch, branch)==0), "Branch magically gained rep..."
     print "Test consensus multiple reporters OK"
 
@@ -1313,10 +1308,8 @@ if __name__ == '__main__':
     # data/api tests
     #test_cash()
     #test_ether()
-    #test_quicksort()
-    #test_insertionsort()
     #test_log_exp()
-    #test_exp()
+    test_exp()
     #test_markets()
     #test_reporting()
 

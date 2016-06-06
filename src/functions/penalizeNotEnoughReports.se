@@ -3,7 +3,6 @@ import expiringEvents as EXPEVENTS
 import consensusData as CONSENSUS
 import reporting as REPORTING
 import fxpFunctions as FXP
-import makeReports as MAKEREPORTS
 inset('refund.se')
 
 macro ONEPOINTTWO: 22136092888451461120
@@ -33,11 +32,11 @@ def proveReporterDidntReportEnough(branch, reporter, eventExample):
     if(residual > periodLength/2):
         return(-2)
     # events a user should be reporting on
-    # eventsExpected == (numberReportEstimate*((reporterList[n]/totalRep)**1.2+.001))
+    # eventsExpected == (numberReportEstimate*((reporterList[n]/totalRep)**1.2))
     # a^b=exp(b*ln(a))=e^(b*ln(a)).
     prelim = EXPEVENTS.getNumEventsToReportOn(branch, lastPeriod)
     # need to do active rep on a period by period basis.. todo
-    exp = FXP.fx_exp(ONEPOINTTWO*FXP.fx_log(EXPEVENTS.getBeforeRep(branch, lastPeriod, sender))/ONE)*2**64/FXP.fx_exp(ONEPOINTTWO*FXP.fx_log(REPORTING.getActiveRep(branch))/ONE) + POINTZEROZEROONE
+    exp = FXP.fx_exp(ONEPOINTTWO*FXP.fx_log(EXPEVENTS.getBeforeRep(branch, lastPeriod, sender))/ONE)*2**64/FXP.fx_exp(ONEPOINTTWO*FXP.fx_log(REPORTING.getActiveRep(branch))/ONE)
     baseReporters = CONSENSUS.getBaseReportersLastPeriod(branch)
     # if total [which is mult by num events to report on via the prelim amount] is too high [>1] then numevents will estimate a higher number than reality, so need to correct for this below
     total = exp*baseReporters
@@ -53,9 +52,11 @@ def proveReporterDidntReportEnough(branch, reporter, eventExample):
     numReportsActual = EXPEVENTS.getNumReportsActual(branch, lastPeriod, reporter)
     # reporter couldve reported on event example but didnt
     couldveReported = EXPEVENTS.getEventCanReportOn(branch, lastPeriod, reporter, eventExample)
-    if(numEvents/2 > EXPEVENTS.getNumReportsActual(branch, lastPeriod, reporter)*ONE && couldveReported):
-        # only meant for people who did report but not enough [those who didnt at all use pen. catchup] so using before rep is fine
+    if(numEvents/2 > numReportsActual*ONE && couldveReported):
+        # typically meant for people who did report but not enough [those who didnt at all use pen. catchup] so using before rep is fine, but if not use rep balance
         originalRep = EXPEVENTS.getBeforeRep(branch, lastPeriod, reporter)
+        if(originalRep==0):
+            originalRep = REPORTING.getRepBalance(branch, reporter)
         # penalize people
         newRep = POINTONE*numReportsActual*originalRep / numEvents
         oldRep = originalRep*POINTNINE / ONE
@@ -67,7 +68,10 @@ def proveReporterDidntReportEnough(branch, reporter, eventExample):
         # sends that rep to the branch rep pool
         REPORTING.addRep(branch, REPORTING.repIDToIndex(branch, branch), -repChange)
         EXPEVENTS.setBeforeRep(branch, lastPeriod, oldRep+newRep, reporter)
-        newAfterRep = EXPEVENTS.getAfterRep(branch, lastPeriod, reporter) + repChange
+        afterRep = EXPEVENTS.getAfterRep(branch, lastPeriod, reporter)
+        newAfterRep = afterRep + repChange
+        if(afterRep==0):
+            newAfterRep = oldRep+newRep
         EXPEVENTS.setAfterRep(branch, lastPeriod, newAfterRep, reporter)
         CONSENSUS.setNotEnoughPenalized(branch, reporter, lastPeriod)
         CONSENSUS.doRefund(msg.sender, reporter)

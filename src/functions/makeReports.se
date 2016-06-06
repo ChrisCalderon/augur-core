@@ -26,7 +26,6 @@ import events as EVENTS
 import markets as MARKETS
 import reporting as REPORTING
 import backstops as BACKSTOPS
-import fxpFunctions as FXP
 import consensusData as CONSENSUS
 import collectFees as COLLECTFEES
 inset('refund.se')
@@ -114,6 +113,7 @@ def submitReport(event, salt, report, ethics):
         EXPEVENTS.setAfterRep(branch, votePeriod, balance, msg.sender)
         EXPEVENTS.setPeriodDormantRep(branch, votePeriod, dormantRep, msg.sender)
         CONSENSUS.setRefund(msg.sender, msg.value)
+        send(CONSENSUS, msg.value)
     if(EXPEVENTS.getReport(branch, votePeriod, event, msg.sender)):
         return(-1)
     eventIndex = EXPEVENTS.getEventIndex(votePeriod, event)

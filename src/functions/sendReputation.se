@@ -21,7 +21,6 @@
 
 import branches as BRANCHES
 import expiringEvents as EXPEVENTS
-import cash as CASH
 import reporting as REPORTING
 import makeReports as REPORTS
 import penalizationCatchup as CATCHUP
@@ -263,3 +262,4 @@ def convertToActiveRep(branch, value):
     
 macro hasReported($branch, $period):
     EXPEVENTS.getNumReportsActual($branch, $period, msg.sender)
+    
