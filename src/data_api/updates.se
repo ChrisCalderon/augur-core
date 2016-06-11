@@ -1,0 +1,83 @@
+# -*- mode: python -*-
+# A contract for updating the Augur contracts with a rep-weighted vote.
+import reporting as REP
+import branches as BRANCHES
+import liststore as WHITELISTS
+import registry as REG
+
+# Data structure
+macro ITEMS_PER_BALLOT: 100
+macro BALLOT_SIZE: 6
+macro CURRENT_PERIOD: (block.timestamp/BRANCHES.getPeriodLength(1010101) - 1)*ITEMS_PER_BALLOT*BALLOT_SIZE
+# sload(CURRENT_PERIOD) # the start of the current ballot.
+# sload(period*100 + 6*i + 0) # the flag which identifies the type of change proposed for the ith ballot
+# sload(period*100 + 6*i + 1) # the first argument for the change.
+# sload(period*100 + 6*i + 2) # second arg
+# sload(period*100 + 6*i + 3) # third arg
+# sload(period*100 + 6*i + 4) # rep in yes vote.
+# sload(period*100 + 6*i + 5) # rep in no vote.
+# sload(sha3([sha3([period, i, msg.sender]:arr)) # 1 if msg.sender voted else 2
+#
+# There are 4 kinds of votes:
+# 1) registry addition; 2 args (key, new_address)
+# 2) registry update; 2 args (key, new_address)
+# 3) registry removal; 1 arg (key)
+# 4) add to whitelist; 2 args (key for contract whitelist, key to add)
+# 5) replace in whitelist; 3 args (first same as 2, old key, new key)
+# 6) remove from whitelist; 2 args (first same as 2, key to remove)
+
+macro REG_ADD: 1
+macro REG_UPD: 2
+macro REG_RMV: 3
+macro WHT_ADD: 4
+macro WHT_UPD: 5
+macro WHT_RMV: 6
+
+def propose(kind, a1, a2, a3):
+    # Propose an update for an existing augur contract.
+    #
+    # Arguments:
+    # old_contract_name -- The key in the registry that refers to the
+    #                      contract being updated.
+    # new_contract -- The address to change it to.
+    with period = CURRENT_PERIOD:
+        with ballot_id = sload(period):
+            sstore(period, ballot_id + 1)
+            with ballot_location = get_ballot_location()
+                    sstore(ballot_location, old_contract)
+                    sstore(ballot_location + 1, new_contract)
+                    return(ballot_id)
+
+
+def get_current_ballot_item(ballot_id):
+    with results = array(4):
+        with period = get_period():
+            with ballot_location = get_ballot_location():
+                results[0] = sload(ballot_location)
+                results[1] = sload(ballot_location + 1)
+                results[2] = sload(ballot_location + 2)
+                results[3] = sload(ballot_location + 3)
+        return(results:arr)
+
+
+def get_ballot_item(period, ballot_id):
+    with results = array(4):
+        with ballot_location = get_ballot_location():
+            results[0] = sload(ballot_location)
+            results[1] = sload(ballot_location + 1)
+            results[2] = sload(ballot_location + 2)
+            results[3] = sload(ballot_location + 3)
+        return(results:arr)
+
+
+def vote(ballot_id, yes_no):
+    with period = get_current_period():
+        with ballot_location = get_ballot_location():
+            with vote_flag_location = get_vote_flag_location():
+                if sload(vote_flag_location):
+                    return(0)
+                else:
+                    sstore(vote_flag_location, 1)
+                    if yes_no:
+                        
+                        
